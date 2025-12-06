@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="GANG SLOT">
+    
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#000000">
+
+    <title>THE GANG SLOT v5.0 - Enhanced</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Roboto+Condensed:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* ここから下の style は元のままでOKですが、bodyに1つだけ追加があります */
+        :root {
+            --main-gold: #f1c40f;
+            --main-red: #c0392b;
+            --font-digital: 'Orbitron', sans-serif;
+            --font-ui: 'Roboto Condensed', sans-serif;
+        }
+
+        body {
+            font-family: var(--font-ui);
+            background-color: #000;
+            color: #fff;
+            text-align: center;
+            height: 100vh;
+            /* モダンブラウザ向けに動的な高さ指定を追加 */
+            height: 100dvh; 
+            width: 100vw;
+            margin: 0;
+            overflow: hidden;
+            background: radial-gradient(circle, #330000 0%, #000000 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* ノッチ対応 */
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+        }
+
+        #game-container {
+            width: 480px;
+            height: 850px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transform-origin: center center;
+            opacity: 0; 
+            transition: opacity 0.5s;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* パーティクル用キャンバス */
+        #particle-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 20;
+        }
+
+        /* アニメーション類 */
+        @keyframes screen-shake {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            10% { transform: translate(-10px, -10px) rotate(-1deg); }
+            30% { transform: translate(-10px, 5px) rotate(0deg); }
+            50% { transform: translate(-5px, 5px) rotate(-1deg); }
+            70% { transform: translate(-10px, 10px) rotate(1deg); }
+            90% { transform: translate(-5px, 5px) rotate(0deg); }
+            100% { transform: translate(0, 0) rotate(0deg); }
+        }
+        .quake-active { animation: screen-shake 0.8s ease-out; }
+
+        @keyframes window-rumble {
+             0% { transform: translate(0, 0); }
+             25% { transform: translate(-2px, 2px); }
+             75% { transform: translate(2px, -2px); }
+             100% { transform: translate(0, 0); }
+         }
+         .rumble-active { animation: window-rumble 0.1s linear infinite; }
+
+        /* リーチ演出用アニメーション */
+        @keyframes reach-glow {
+            0% { box-shadow: 0 0 10px #ff0000, inset 0 0 10px #ff0000; border-color: #ff0000; }
+            50% { box-shadow: 0 0 30px #ff0000, inset 0 0 30px #ff0000; border-color: #fff; }
+            100% { box-shadow: 0 0 10px #ff0000, inset 0 0 10px #ff0000; border-color: #ff0000; }
+        }
+
+        h1 { 
+            color: #e74c3c; 
+            text-shadow: 0 0 10px #c0392b, 0 0 20px #000; 
+            margin-bottom: 10px; 
+            font-style: italic;
+            font-family: 'Impact', sans-serif; 
+            letter-spacing: 2px;
+            font-size: 3rem;
+            margin-top: 0;
+        }
+        
+        .status-board {
+            background: #222;
+            padding: 10px 30px;
+            border-radius: 50px;
+            margin-bottom: 20px;
+            border: 3px solid #555;
+            display: flex;
+            gap: 40px;
+            font-size: 1.2rem;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1), inset 0 0 10px #000;
+            font-weight: bold;
+        }
+        .val { 
+            color: var(--main-gold); 
+            font-family: var(--font-digital); 
+            font-size: 1.8rem;
+            text-shadow: 0 0 5px rgba(241, 196, 15, 0.5);
+            min-width: 80px;
+            display: inline-block;
+        }
+
+        .slot-machine {
+            background: linear-gradient(180deg, #444, #1a1a1a);
+            padding: 30px;
+            border-radius: 25px;
+            box-shadow: 0 0 60px rgba(231, 76, 60, 0.4);
+            border: 5px solid #7f8c8d;
+            position: relative;
+        }
+
+        .reels-window {
+            display: flex;
+            gap: 10px;
+            background: #000;
+            padding: 0 10px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            position: relative;
+            overflow: hidden; 
+            height: 360px; 
+            box-shadow: inset 0 0 30px #000;
+            border: 6px solid #2c3e50;
+            transition: border-color 0.2s;
+        }
+        /* リーチ時の特定リールハイライト用クラス */
+        .reach-mode .reels-window {
+            /* 親には何もしない */
+        }
+
+        .reels-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 25%, rgba(0,0,0,0) 75%, rgba(0,0,0,0.9) 100%);
+            z-index: 50;
+            pointer-events: none;
+        }
+
+        .win-line {
+            position: absolute;
+            top: 50%; left: 0; width: 100%; height: 120px;
+            box-sizing: border-box;
+            border-top: 4px solid rgba(231, 76, 60, 0.8);
+            border-bottom: 4px solid rgba(231, 76, 60, 0.8);
+            background: rgba(231, 76, 60, 0.1);
+            transform: translateY(-50%);
+            z-index: 40; pointer-events: none;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .win-line::before, .win-line::after {
+            content: "◀"; color: var(--main-red); font-size: 24px; margin: 0 2px;
+            text-shadow: 0 0 8px #fff; font-family: var(--font-digital);
+        }
+        .win-line::after { content: "▶"; }
+
+        .reel-container {
+            position: relative;
+            width: 90px;
+            height: 100%;
+            overflow: hidden;
+            border: 2px solid transparent; /* リーチ枠用 */
+            box-sizing: border-box;
+        }
+        /* リーチ時に適用するクラス */
+        .reel-container.in-reach {
+            animation: reach-glow 0.5s infinite alternate;
+            z-index: 45; /* オーバーレイより下に、リールより上に */
+        }
+
+        .reel-strip {
+            width: 100%;
+            background: #f8f9fa;
+            color: #000;
+            font-family: var(--font-digital); 
+            font-size: 65px;
+            position: relative;
+            will-change: transform; 
+        }
+
+        .symbol {
+            height: 120px;
+            display: flex; align-items: center; justify-content: center;
+            border-bottom: 2px solid #e9ecef; box-sizing: border-box;
+        }
+
+        .controls { display: flex; gap: 20px; justify-content: center; }
+        .stop-btn {
+            width: 90px; height: 90px;
+            background: linear-gradient(to bottom, #e74c3c, #c0392b);
+            color: white; border: 4px solid #922b21;
+            border-radius: 50%;
+            font-family: var(--font-ui); font-weight: 700; font-size: 1.2rem;
+            cursor: pointer;
+            box-shadow: 0 8px #641e16, 0 10px 20px rgba(0,0,0,0.6);
+            transition: all 0.05s; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+        .stop-btn:active { transform: translateY(6px); box-shadow: 0 2px #641e16; }
+        .stop-btn:disabled { 
+            background: #555; border-color: #333; box-shadow: none; 
+            cursor: not-allowed; opacity: 0.5; color: #aaa;
+        }
+
+        .start-btn {
+            display: block; width: 100%; margin-top: 30px; padding: 18px;
+            font-family: var(--font-ui); font-size: 1.8rem; font-weight: bold;
+            background: linear-gradient(to bottom, #f39c12, #d35400);
+            color: white; border: none; border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 8px #a84300, 0 0 20px rgba(243, 156, 18, 0.4);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            letter-spacing: 2px; transition: all 0.05s;
+        }
+        .start-btn:active { transform: translateY(6px); box-shadow: 0 2px #a84300; }
+        .start-btn:disabled { 
+            background: #444; box-shadow: none; cursor: not-allowed; 
+            color: #888; box-shadow: inset 0 0 10px #000;
+        }
+
+        #message { 
+            margin-top: 25px; height: 1.5em; 
+            color: var(--main-gold); font-family: var(--font-ui);
+            font-weight: bold; font-size: 1.5rem; 
+            text-shadow: 2px 2px 4px #000; letter-spacing: 1px;
+        }
+
+        .ad-banner {
+            margin-top: 30px; padding: 15px;
+            background: #fff; color: #000;
+            font-family: var(--font-ui);
+            width: 100%; box-sizing: border-box;
+            border: 4px dashed var(--main-red);
+            cursor: pointer; display: none;
+            font-size: 1.1rem; box-shadow: 0 0 20px rgba(255,255,255,0.2);
+        }
+        .ad-banner:hover { background: #ffcccc; }
+    </style>
+</head>
+<body>
+
+    <canvas id="particle-canvas"></canvas>
+
+    <div id="game-container">
+        <h1>🎰 THE GANG SLOT 🎰</h1>
+
+        <div class="status-board">
+            <div>COIN: <span id="credits" class="val">---</span></div>
+            <div>BET: <span class="val">3</span></div>
+        </div>
+
+        <div class="slot-machine">
+            <div class="reels-window" id="reelsWindow">
+                <div class="win-line"></div>
+                <div class="reels-overlay"></div>
+                <div class="reel-container" id="container0"><div class="reel-strip" id="reel0"></div></div>
+                <div class="reel-container" id="container1"><div class="reel-strip" id="reel1"></div></div>
+                <div class="reel-container" id="container2"><div class="reel-strip" id="reel2"></div></div>
+            </div>
+
+            <div class="controls">
+                <button class="stop-btn" onclick="stopReel(0)" id="btn0" disabled>STOP</button>
+                <button class="stop-btn" onclick="stopReel(1)" id="btn1" disabled>STOP</button>
+                <button class="stop-btn" onclick="stopReel(2)" id="btn2" disabled>STOP</button>
+            </div>
+
+            <button class="start-btn" onclick="spin()" id="startBtn">SPIN</button>
+            <div id="message">Loading...</div>
+        </div>
+
+        <div id="adArea" class="ad-banner" onclick="watchAd()">
+            📺 <b>コインが尽きました！</b><br>
+            ここをクリックして広告を見ると 50枚 プレゼント！
+        </div>
+    </div>
+
+    <script>
+        // === グローバル定数 ===
+        const symbolPattern = ['7️⃣', '🔔', '🍒', '🍇', '💎', '🔶', '🍒', '🔔', '🍇', '🍒'];
+        const SYMBOL_HEIGHT = 120;
+        const NORMAL_SPEED = 20; // 少し速度アップ
+        const INITIAL_CREDITS = 100;
+        
+        // === 状態変数 ===
+        let credits = 0;
+        const betAmount = 3;
+        let reelStatus = [false, false, false];
+        let animationIds = [null, null, null];
+        let currentPos = [0, 0, 0];
+        let currentSpeeds = [0, 0, 0];
+        let stopResults = [null, null, null]; // 停止したシンボルを記憶
+        
+        // === DOM要素（initで代入） ===
+        let creditsEl, msgEl, startBtn, adArea, reelsWindow, container;
+
+        // === サウンドエンジン (Web Audio API) ===
+        const AudioEngine = {
+            ctx: null,
+            init: function() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                }
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            },
+            playTone: function(freq, type, duration, vol=0.1) {
+                if(!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + duration);
+            },
+            playSpin: function() {
+                this.init();
+                // 低音の回転音
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(50, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(30, this.ctx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.05, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.1);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.1);
+            },
+            playStop: function() {
+                this.init();
+                this.playTone(800, 'square', 0.1, 0.1);
+                this.playTone(150, 'sawtooth', 0.1, 0.2); // 重厚感
+            },
+            playReach: function() {
+                this.init();
+                // 警報のような音
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(440, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(880, this.ctx.currentTime + 0.5);
+                gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.5);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.5);
+            },
+            playWin: function() {
+                this.init();
+                // ファンファーレ風
+                const notes = [523.25, 659.25, 783.99, 1046.50, 783.99, 1046.50];
+                notes.forEach((freq, i) => {
+                    setTimeout(() => {
+                        this.playTone(freq, 'square', 0.4, 0.15);
+                        this.playTone(freq/2, 'sawtooth', 0.4, 0.15); // ベース音
+                    }, i * 120);
+                });
+            }
+        };
+
+        // === パーティクルシステム ===
+        const ParticleSystem = {
+            canvas: null,
+            ctx: null,
+            particles: [],
+            isActive: false,
+            init: function() {
+                this.canvas = document.getElementById('particle-canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.resize();
+                window.addEventListener('resize', () => this.resize());
+            },
+            resize: function() {
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+            },
+            spawn: function(x, y) {
+                for(let i=0; i<50; i++) {
+                    this.particles.push({
+                        x: x,
+                        y: y,
+                        vx: (Math.random() - 0.5) * 15,
+                        vy: (Math.random() - 0.5) * 15 - 5,
+                        life: 1.0,
+                        color: Math.random() > 0.5 ? '#f1c40f' : '#fff'
+                    });
+                }
+                if(!this.isActive) {
+                    this.isActive = true;
+                    this.loop();
+                }
+            },
+            loop: function() {
+                if(!this.isActive) return;
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                for(let i=0; i<this.particles.length; i++) {
+                    const p = this.particles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vy += 0.5; // 重力
+                    p.life -= 0.02;
+
+                    this.ctx.fillStyle = p.color;
+                    this.ctx.globalAlpha = p.life;
+                    this.ctx.fillRect(p.x, p.y, 8, 8); // デジタル感を出すため四角
+                }
+
+                this.particles = this.particles.filter(p => p.life > 0);
+
+                if(this.particles.length > 0) {
+                    requestAnimationFrame(() => this.loop());
+                } else {
+                    this.isActive = false;
+                    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                }
+            }
+        };
+
+        // === フェイルセーフなストレージ機能 ===
+        const SafeStorage = {
+            isAvailable: false,
+            init: function() {
+                try {
+                    localStorage.setItem('test_storage', '1');
+                    localStorage.removeItem('test_storage');
+                    this.isAvailable = true;
+                } catch(e) {
+                    console.warn('Storage not available. Using memory mode.');
+                    this.isAvailable = false;
+                }
+            },
+            save: function(key, value) {
+                if (this.isAvailable) localStorage.setItem(key, value);
+            },
+            load: function(key) {
+                if (this.isAvailable) return localStorage.getItem(key);
+                return null;
+            }
+        };
+
+        // === 画面サイズ調整 ===
+        function resizeGame() {
+            if (!container) return;
+            const windowW = window.innerWidth;
+            const windowH = window.innerHeight;
+            const baseW = 500;
+            const baseH = 900;
+            const scaleW = windowW / baseW;
+            const scaleH = windowH / baseH;
+            
+            let scale = Math.min(scaleW, scaleH) * 0.95;
+            if(scale > 1) scale = 1;
+
+            container.style.transform = `scale(${scale})`;
+            container.style.opacity = 1;
+        }
+
+        // === データ管理 ===
+        function loadData() {
+            const saved = SafeStorage.load('gang_slot_credits');
+            credits = saved !== null ? parseInt(saved) : INITIAL_CREDITS;
+            updateDisplay();
+            msgEl.innerText = "WELCOME, BOSS.";
+        }
+
+        function saveData() {
+            SafeStorage.save('gang_slot_credits', credits);
+        }
+
+        function updateDisplay() {
+            if(!creditsEl) return;
+            creditsEl.innerText = credits;
+            if (credits < betAmount) {
+                adArea.style.display = "block";
+                startBtn.disabled = true;
+                msgEl.innerText = "GAME OVER";
+            } else {
+                adArea.style.display = "none";
+                if (!reelStatus.some(s => s)) {
+                     startBtn.disabled = false;
+                }
+            }
+        }
+
+        // === ゲームロジック ===
+        function watchAd() {
+            if(confirm("広告動画を再生します（3秒かかります）...")) {
+                setTimeout(() => {
+                    credits += 50;
+                    saveData();
+                    updateDisplay();
+                    msgEl.innerText = "復活！ +50 Coin";
+                    AudioEngine.playWin(); // 復活時も音を鳴らす
+                    alert("広告収入、ありがとうございます！");
+                }, 1000);
+            }
+        }
+
+        function spin() {
+            if (credits < betAmount) return;
+            
+            // オーディオコンテキストの初期化（ユーザー操作起点）
+            AudioEngine.init();
+
+            credits -= betAmount;
+            saveData();
+            updateDisplay();
+
+            msgEl.innerText = "SPINNING...";
+            startBtn.disabled = true;
+            for(let i=0; i<3; i++) {
+                document.getElementById(`btn${i}`).disabled = true;
+                // リーチ演出のリセット
+                document.getElementById(`container${i}`).classList.remove('in-reach');
+            }
+            stopResults = [null, null, null]; // 結果リセット
+
+            reelsWindow.classList.add('rumble-active');
+
+            for (let i = 0; i < 3; i++) {
+                reelStatus[i] = true;
+                currentSpeeds[i] = Math.floor(Math.random() * 30) + 30;
+                const strip = document.getElementById(`reel${i}`);
+                strip.style.transition = 'none';
+                animateReel(i);
+            }
+
+            setTimeout(() => {
+                 reelsWindow.classList.remove('rumble-active');
+                 msgEl.innerText = "PRESS STOP!";
+                 for (let i = 0; i < 3; i++) {
+                     currentSpeeds[i] = NORMAL_SPEED;
+                     document.getElementById(`btn${i}`).disabled = false;
+                 }
+            }, 500);
+        }
+
+        function animateReel(index) {
+            if (!reelStatus[index]) return;
+            
+            // 回転中の音（頻度を調整）
+            if(Math.random() < 0.1) AudioEngine.playSpin();
+
+            currentPos[index] += currentSpeeds[index]; 
+            const loopThreshold = -(symbolPattern.length * SYMBOL_HEIGHT);
+            if (currentPos[index] > loopThreshold) {
+                currentPos[index] -= (symbolPattern.length * SYMBOL_HEIGHT);
+            }
+            const strip = document.getElementById(`reel${index}`);
+            strip.style.transform = `translateY(${currentPos[index]}px)`;
+            animationIds[index] = requestAnimationFrame(() => animateReel(index));
+        }
+
+        function getSymbolAtCenter(index) {
+            const strip = document.getElementById(`reel${index}`);
+            const windowRect = strip.parentElement.getBoundingClientRect();
+            const centerY = windowRect.top + windowRect.height / 2;
+            const symbols = strip.querySelectorAll('.symbol');
+            for(let s of symbols) {
+                const rect = s.getBoundingClientRect();
+                if (rect.top < centerY && rect.bottom > centerY) {
+                    return s.innerText;
+                }
+            }
+            return '❓';
+        }
+
+        function stopReel(index) {
+            if (!reelStatus[index]) return;
+            
+            AudioEngine.playStop(); // 停止音
+
+            reelStatus[index] = false;
+            cancelAnimationFrame(animationIds[index]);
+            document.getElementById(`btn${index}`).disabled = true;
+            
+            const strip = document.getElementById(`reel${index}`);
+            let targetIndex = Math.round(currentPos[index] / SYMBOL_HEIGHT);
+            let finalPos = targetIndex * SYMBOL_HEIGHT;
+
+            strip.style.transition = 'transform 0.2s cubic-bezier(0.2, 1, 0.3, 1)'; 
+            strip.style.transform = `translateY(${finalPos}px)`;
+            currentPos[index] = finalPos;
+
+            // アニメーション完了後にシンボル判定を行う
+            setTimeout(() => {
+                const sym = getSymbolAtCenter(index);
+                stopResults[index] = sym;
+
+                // === リーチ判定 (重要) ===
+                // 1リール目と2リール目が停止済みで、シンボルが一致し、かつ3リール目がまだ動いている場合
+                if (index === 1 && !reelStatus[0] && !reelStatus[1] && reelStatus[2]) {
+                    if (stopResults[0] === stopResults[1]) {
+                        // リーチ発生！
+                        msgEl.innerText = "REACH!!";
+                        msgEl.style.color = "red";
+                        document.getElementById('container2').classList.add('in-reach');
+                        AudioEngine.playReach(); // リーチ音
+                        // 3リール目のスピードを少し落としてじらす
+                        currentSpeeds[2] = NORMAL_SPEED * 0.5;
+                    }
+                }
+
+                if (reelStatus.every(s => !s)) {
+                    // 全リール停止後の処理
+                    document.getElementById('container2').classList.remove('in-reach');
+                    setTimeout(checkResult, 100);
+                }
+            }, 200);
+        }
+
+        function shakeScreen() {
+            if(!container) return;
+            container.classList.add('quake-active');
+            setTimeout(() => {
+                container.classList.remove('quake-active');
+            }, 800);
+        }
+
+        function checkResult() {
+            const results = stopResults; // 既に取得済み
+
+            if (results[0] === results[1] && results[1] === results[2]) {
+                const sym = results[0];
+                let payout = 0;
+                if (sym === '7️⃣') payout = 100;
+                else if (sym === '🔶') payout = 50;
+                else payout = 15;
+                
+                credits += payout;
+                saveData();
+                updateDisplay();
+                msgEl.innerText = `BIG BONUS!! ${results.join('')} (+${payout})`;
+                msgEl.style.color = '#e74c3c';
+                
+                AudioEngine.playWin(); // 当たり音
+                shakeScreen();
+                
+                // パーティクル発生（画面中央）
+                const rect = reelsWindow.getBoundingClientRect();
+                ParticleSystem.spawn(rect.left + rect.width/2, rect.top);
+
+            } else {
+                msgEl.innerText = "NO BONUS...";
+                msgEl.style.color = '#fff';
+            }
+            
+            if (credits >= betAmount) startBtn.disabled = false;
+        }
+
+        // === 初期化処理 ===
+        function init() {
+            try {
+                SafeStorage.init();
+                ParticleSystem.init();
+
+                container = document.getElementById('game-container');
+                creditsEl = document.getElementById('credits');
+                msgEl = document.getElementById('message');
+                startBtn = document.getElementById('startBtn');
+                adArea = document.getElementById('adArea');
+                reelsWindow = document.getElementById('reelsWindow');
+
+                if(!creditsEl || !reelsWindow) {
+                    throw new Error("Required DOM elements not found.");
+                }
+
+                // リールの生成
+                for(let i=0; i<3; i++) {
+                    const strip = document.getElementById(`reel${i}`);
+                    if(!strip) continue;
+                    let html = '';
+                    const longPattern = [...symbolPattern, ...symbolPattern, ...symbolPattern, ...symbolPattern, ...symbolPattern];
+                    longPattern.forEach(sym => {
+                        let className = 'symbol';
+                        if(sym === '7️⃣') className += ' digit-symbol';
+                        html += `<div class="${className}">${sym}</div>`;
+                    });
+                    strip.innerHTML = html;
+                    currentPos[i] = -(symbolPattern.length * 2 * SYMBOL_HEIGHT);
+                    strip.style.transform = `translateY(${currentPos[i]}px)`;
+                }
+
+                loadData();
+                resizeGame();
+                window.addEventListener('resize', resizeGame);
+
+            } catch (e) {
+                console.error("Initialize failed:", e);
+                const errDiv = document.getElementById('message');
+                if(errDiv) {
+                    errDiv.innerText = "起動エラー: " + e.message;
+                    errDiv.style.color = "red";
+                }
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', init);
+
+    </script>
+</body>
+</html>
