@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>オークションキング・プロトタイプ</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <h1>Auction King Mini</h1>
+
+    <div id="screen-shop" class="card hidden" style="max-width: 600px;">
+        <h2 id="shop-title">ツール購入フェーズ</h2>
+        <p id="shop-budget" style="font-size: 1.2em; color: #2ecc71; font-weight: bold;">現在の予算: $--</p>
+        <p style="font-size: 12px; color: #666; margin-bottom: 20px;">※最大3つまで所持できます（1ラウンドに使えるのは1つだけ）</p>
+
+        <div style="display: flex; flex-direction: column; gap: 15px; text-align: left;">
+            
+            <details open style="background: #f8f9fa; border-radius: 8px; border-left: 5px solid #3498db; overflow: hidden;">
+                <summary style="padding: 15px; font-size: 16px; color: #2980b9; font-weight: bold; cursor: pointer; outline: none;">
+                    📐 サイズスキャナー（形状の特定）
+                </summary>
+                <div id="shop-cat-size" style="padding: 0 15px 15px 15px; display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px;"></div>
+            </details>
+
+            <details style="background: #f8f9fa; border-radius: 8px; border-left: 5px solid #e67e22; overflow: hidden;">
+                <summary style="padding: 15px; font-size: 16px; color: #d35400; font-weight: bold; cursor: pointer; outline: none;">
+                    💎 レア度チェッカー（価値のヒント）
+                </summary>
+                <div id="shop-cat-rarity" style="padding: 0 15px 15px 15px; display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px;"></div>
+            </details>
+
+            <details style="background: #f8f9fa; border-radius: 8px; border-left: 5px solid #9b59b6; overflow: hidden;">
+                <summary style="padding: 15px; font-size: 16px; color: #8e44ad; font-weight: bold; cursor: pointer; outline: none;">
+                    ⚙️ 特殊・高級ツール / ブラフ
+                </summary>
+                <div id="shop-cat-special" style="padding: 0 15px 15px 15px; display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px;"></div>
+            </details>
+
+        </div>
+
+        <hr style="margin: 25px 0;">
+        <div id="shop-inventory-preview" style="font-size: 14px; margin-bottom: 15px; background: #eaedf1; padding: 10px; border-radius: 5px;"></div>
+        <button onclick="game.finishShopping()" class="btn btn-green" style="background: #27ae60; width: 100%; font-size: 18px; padding: 12px;">購入を終了して次の人へ</button>
+    </div>
+
+    <div id="screen-item" class="card hidden">
+        <h2>今回競り合う倉庫</h2>
+        <p><strong id="display-item-name">📦 商品を読み込み中...</strong></p>
+        <p id="display-item-hint">中身の詳細は不明・平均価値 $5,000</p>
+        <button id="btn-start-auction" class="btn btn-green" onclick="game.startAuction()">オークション開始！</button>
+    </div>
+
+    <div id="screen-pass" class="card hidden">
+        <h2 id="pass-title">次は プレイヤーX の番です</h2>
+        <p class="alert">※他のプレイヤーは画面を見ないでください！</p>
+        <button id="btn-pass-action" class="btn btn-blue" onclick="game.showBidScreen()">画面を表示する</button>
+    </div>
+
+    <button class="btn btn-blue" onclick="game.toggleHistory(true)" style="background: #8e44ad; font-size: 14px; margin-bottom: 10px;">📊 ラウンド履歴を見る</button>
+
+    <div id="screen-bid" class="card hidden">
+        <h2 id="bid-title">プレイヤーX の入札</h2>
+        <p id="bid-budget">予算: $--</p>
+        
+        <div style="background: #e9ecef; padding: 10px; border-radius: 5px; margin-bottom: 15px; text-align: left;">
+            <span style="font-weight: bold; font-size: 12px; color: #555;">📋 倉庫の初期情報:</span>
+            <p id="bid-initial-hint" style="margin: 5px 0 0 0; font-size: 14px; font-weight: bold; color: #2c3e50;"></p>
+        </div>
+        
+        <button class="btn btn-blue" onclick="game.toggleEncyclopedia(true)" style="background: #17a2b8; font-size: 14px; margin-bottom: 10px;">📖 商品図鑑を見る</button>
+        
+        <div id="item-use-area" class="item-area"></div>
+        <p id="item-effect-result" class="effect-result"></p>
+
+        <span>$ </span><input type="number" id="bid-input" min="0"><br><br>
+        <button class="btn btn-green" onclick="game.submitBid()">入札を確定する</button>
+    </div>
+
+    <div id="modal-history" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; overflow-y: auto;">
+        <div class="card" style="margin-top: 50px; max-width: 600px;">
+            <h2>📊 ラウンド履歴</h2>
+            <div id="history-list" style="text-align: left; max-height: 60vh; overflow-y: auto; margin-bottom: 15px;">
+                </div>
+            <button onclick="game.toggleHistory(false)" style="background: #6c757d;">閉じる</button>
+        </div>
+    </div>
+
+    <div id="modal-encyclopedia" class="hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; overflow-y: auto;">
+        <div class="card" style="margin-top: 50px; max-width: 500px;">
+            <h2>商品図鑑</h2>
+            <div id="encyclopedia-controls" style="margin-bottom: 15px; text-align: left;">
+                <span style="font-size: 14px; font-weight: bold; margin-right: 5px;">絞り込み:</span>
+                <div style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px;">
+                    <button onclick="ui.renderEncyclopedia()">すべて</button>
+                    <button onclick="ui.renderEncyclopedia(item => item.rarity === 'N')">ノーマル</button>
+                    <button onclick="ui.renderEncyclopedia(item => item.rarity === 'R')">レア</button>
+                    <button onclick="ui.renderEncyclopedia(item => item.rarity === 'SR')">スーパーレア</button>
+                    <button onclick="ui.renderEncyclopedia(item => item.rarity === 'UR')">ウルトラレア</button>
+                    <button onclick="ui.renderEncyclopedia(item => item.rarity === 'LR')">レジェンドレア</button>
+                </div>
+            </div>
+            
+            <div id="encyclopedia-list" style="text-align: left; max-height: 60vh; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 5px;">
+                </div>
+            <button onclick="game.toggleEncyclopedia(false)" style="background: #6c757d; margin-top: 20px;">閉じる</button>
+        </div>
+    </div>
+
+    <div id="screen-result" class="card hidden">
+        <h2 id="result-title">結果発表！</h2>
+        <div id="result-details"></div>
+        <button class="btn btn-blue" id="btn-result-action" onclick="game.reset()">次へ</button>
+    </div>
+
+    <div id="inventory-container"></div>
+
+    <script src="data.js"></script>
+    <script src="draw.js"></script>
+    <script src="ui.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>

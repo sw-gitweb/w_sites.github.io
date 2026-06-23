@@ -1,0 +1,182 @@
+/* =========================================
+   ベーススタイル（画面全体）
+========================================= */
+body { 
+    font-family: sans-serif; 
+    background: #2c3e50; /* メインのダーク背景 */
+    color: white; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    justify-content: center; 
+    min-height: 100vh; 
+    margin: 0; 
+    text-align: center;
+}
+
+h1 { 
+    font-size: 3em; 
+    margin-bottom: 20px; 
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5); 
+}
+
+.status-text { 
+    font-size: 1.2em; 
+    margin-bottom: 30px; 
+    color: #f1c40f; 
+}
+
+/* =========================================
+   パネル（設定画面やオークション画面の枠組み）
+========================================= */
+.panel {
+    background: #34495e; /* 少し明るめのパネル背景 */
+    padding: 30px; 
+    border-radius: 10px; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    max-width: 90%; 
+    width: 400px; /* 必要に応じてゲーム画面では幅を上書きします */
+}
+
+/* =========================================
+   ボタンの共通デザイン
+========================================= */
+.btn {
+    color: white; 
+    border: none; 
+    padding: 15px 30px; 
+    font-size: 18px; 
+    border-radius: 5px; 
+    cursor: pointer; 
+    margin: 10px 0; 
+    width: 100%; 
+    box-sizing: border-box;
+    transition: background 0.2s; /* ホバー時の色の変化を滑らかに */
+}
+
+/* ボタンの色バリエーション */
+.btn-blue { background: #3498db; }
+.btn-blue:hover { background: #2980b9; }
+
+.btn-green { background: #2ecc71; }
+.btn-green:hover { background: #27ae60; }
+
+.btn-red { background: #e74c3c; }
+.btn-red:hover { background: #c0392b; }
+
+/* タイトル画面のメニューボタン用（幅を固定） */
+.menu-btn {
+    width: 250px;
+    margin: 10px;
+}
+
+/* =========================================
+   入力フォーム群
+========================================= */
+.setting-group { 
+    margin-bottom: 20px; 
+    text-align: left; 
+}
+
+select, input[type="text"], input[type="number"] {
+    padding: 10px; 
+    font-size: 16px; 
+    border-radius: 5px; 
+    border: none; 
+    width: 100%; 
+    box-sizing: border-box; 
+    margin-top: 5px;
+}
+
+/* =========================================
+   ユーティリティ
+========================================= */
+.hidden { 
+    display: none !important; 
+}
+
+/* =========================================
+   ゲーム画面専用パーツ（ショップ、図鑑、履歴など）
+========================================= */
+/* 仮CSSの .card を、タイトル画面のパネルと同じ見た目に上書きします */
+.card {
+    background: #34495e; 
+    padding: 30px; 
+    border-radius: 10px; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    max-width: 90%; 
+    width: 450px; 
+    margin: 20px auto;
+}
+
+/* ショップの商品や、履歴リストの枠組み */
+.shop-item { 
+    background: rgba(0, 0, 0, 0.2); /* パネルより少しだけ暗い背景で区切る */
+    margin-bottom: 15px; 
+    padding: 15px; 
+    border: 1px solid rgba(255, 255, 255, 0.1); /* うっすらとした白い線 */
+    border-radius: 8px; 
+    text-align: left; 
+}
+
+/* アイテムエリアの区切り線 */
+.item-area { 
+    margin-top: 20px; 
+    padding-top: 15px; 
+    border-top: 1px dashed rgba(255, 255, 255, 0.3); 
+}
+
+/* ツールを使った時の結果表示（暗い背景に映えるゴールドに変更） */
+.effect-result { 
+    color: #f1c40f; 
+    font-weight: bold; 
+    font-size: 15px; 
+    margin-top: 10px; 
+}
+
+/* エラーなどの警告文（暗い背景でも読みやすい赤色に変更） */
+.alert { 
+    color: #ff6b6b; 
+    font-weight: bold; 
+}
+
+/* ゲーム画面用の小さいボタン（使うボタンなど） */
+.use-btn { 
+    background: #2ecc71; 
+    color: white; 
+    border: none; 
+    padding: 8px 16px; 
+    font-size: 14px; 
+    border-radius: 5px; 
+    cursor: pointer; 
+}
+.use-btn:hover { background: #27ae60; }
+
+/* 押せないボタン（disabled）の見た目 */
+button:disabled, .use-btn:disabled { 
+    background: #7f8c8d !important; 
+    color: #bdc3c7 !important;
+    cursor: not-allowed; 
+}
+
+/* =========================================
+   ショップ画面の購入ボタン
+========================================= */
+.shop-item button {
+    background: #3498db;
+    color: white !important; /* 黒文字を白に上書き */
+    border: none;
+    padding: 8px 16px;
+    font-size: 14px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+}
+.shop-item button:hover {
+    background: #2980b9;
+}
+.shop-item button:disabled {
+    background: #7f8c8d !important;
+    color: #bdc3c7 !important;
+    cursor: not-allowed;
+}

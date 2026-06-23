@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>オークションキング - タイトル</title>
+    <style>
+        body { 
+            font-family: sans-serif; background: #2c3e50; color: white; 
+            display: flex; flex-direction: column; align-items: center; 
+            justify-content: center; min-height: 100vh; margin: 0; text-align: center;
+        }
+        h1 { font-size: 3em; margin-bottom: 20px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+        .status-text { font-size: 1.2em; margin-bottom: 30px; color: #f1c40f; }
+        
+        .menu-btn { 
+            background: #3498db; color: white; border: none; padding: 15px 30px; 
+            font-size: 18px; border-radius: 5px; cursor: pointer; margin: 10px; width: 250px; 
+        }
+        .menu-btn:hover { background: #2980b9; }
+        
+        .hidden { display: none !important; }
+        
+        /* 設定画面用のスタイル */
+        #screen-settings {
+            background: #34495e; padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            max-width: 90%; width: 400px;
+        }
+        .setting-group { margin-bottom: 20px; text-align: left; }
+        select, input[type="text"] {
+            padding: 10px; font-size: 16px; border-radius: 5px; border: none; width: 100%; box-sizing: border-box; margin-top: 5px;
+        }
+        .save-btn { background: #2ecc71; width: 100%; margin: 10px 0 0 0; }
+        .save-btn:hover { background: #27ae60; }
+        .cancel-btn { background: #e74c3c; width: 100%; margin: 10px 0 0 0; }
+        .cancel-btn:hover { background: #c0392b; }
+    </style>
+</head>
+<body>
+
+    <div id="screen-main">
+        <h1>Auction King Mini</h1>
+        <p id="game-status" class="status-text">現在の設定: 4人プレイ</p>
+
+        <button class="menu-btn" onclick="startGame()">ゲーム開始</button>
+        <button class="menu-btn" onclick="showSettingsScreen()">ゲーム設定（人数・名前）</button>
+        <button class="menu-btn" onclick="location.href='tutorial.html'" style="background: #e67e22;">遊び方（ルール説明）</button>
+    </div>
+
+    <div id="screen-settings" class="hidden">
+        <h2>ゲーム設定</h2>
+        
+        <div class="setting-group">
+            <label>プレイ人数（2〜6人）:</label>
+            <select id="player-count-select" onchange="generateNameInputs()">
+                <option value="2">2人</option>
+                <option value="3">3人</option>
+                <option value="4" selected>4人</option>
+                <option value="5">5人</option>
+                <option value="6">6人</option>
+            </select>
+        </div>
+
+        <div id="name-inputs-container" class="setting-group">
+            </div>
+        
+        <button class="menu-btn save-btn" onclick="saveSettings()">設定を保存して戻る</button>
+        <button class="menu-btn cancel-btn" onclick="hideSettingsScreen()">キャンセル</button>
+    </div>
+
+    <script>
+        // ページ読み込み時に保存された設定を反映
+        window.onload = function() {
+            updateStatusText();
+        };
+
+        function startGame() {
+            location.href = 'index.html';
+        }
+
+        function updateStatusText() {
+            const count = localStorage.getItem('auction_player_count') || 4;
+            document.getElementById('game-status').innerText = `現在の設定: ${count}人プレイ`;
+        }
+
+        function showSettingsScreen() {
+            document.getElementById('screen-main').classList.add('hidden');
+            document.getElementById('screen-settings').classList.remove('hidden');
+            
+            // 保存されている人数をセレクトボックスに反映
+            const savedCount = localStorage.getItem('auction_player_count') || 4;
+            document.getElementById('player-count-select').value = savedCount;
+            
+            // 人数に合わせて入力欄を生成
+            generateNameInputs();
+        }
+
+        function hideSettingsScreen() {
+            document.getElementById('screen-settings').classList.add('hidden');
+            document.getElementById('screen-main').classList.remove('hidden');
+        }
+
+        // 人数分の名前入力欄を自動で作る処理
+        function generateNameInputs() {
+            const count = parseInt(document.getElementById('player-count-select').value, 10);
+            const container = document.getElementById('name-inputs-container');
+            container.innerHTML = '<label>プレイヤー名:</label><br>';
+
+            // 保存されている名前のリストを読み込む
+            const savedNamesJson = localStorage.getItem('auction_player_names');
+            let savedNames = savedNamesJson ? JSON.parse(savedNamesJson) : [];
+
+            for (let i = 0; i < count; i++) {
+                const defaultName = savedNames[i] || `プレイヤー${i + 1}`;
+                container.innerHTML += `<input type="text" id="name-input-${i}" value="${defaultName}" placeholder="プレイヤー${i + 1}の名前"><br>`;
+            }
+        }
+
+        // 設定をローカルストレージに保存する処理
+        function saveSettings() {
+            const count = parseInt(document.getElementById('player-count-select').value, 10);
+            let names = [];
+
+            // 入力された名前を配列（リスト）にまとめる
+            for (let i = 0; i < count; i++) {
+                let inputVal = document.getElementById(`name-input-${i}`).value.trim();
+                if (inputVal === "") inputVal = `プレイヤー${i + 1}`; // 空欄ならデフォルト名
+                names.push(inputVal);
+            }
+
+            // localStorage に人数と名前のリスト（JSON文字列に変換）を保存
+            localStorage.setItem('auction_player_count', count);
+            localStorage.setItem('auction_player_names', JSON.stringify(names));
+            
+            updateStatusText();
+            hideSettingsScreen();
+        }
+    </script>
+</body>
+</html>
