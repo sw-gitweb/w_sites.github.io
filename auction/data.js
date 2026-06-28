@@ -28,7 +28,7 @@ const SHOP_ITEMS = [
     { id: "dud_scanner_2", name: "ハズレ検知器（複）", price: 2000, description: "箱内で低い方から2つのレアリティの商品をランダムに最大5マス分表示する", type: "dud", count: 5, depth: 2 },
 
     // --- 特殊ツール（価格帯：高め。場を荒らすブラフ専用） ---
-    { id: "fake_bid", name: "偽装入札チケット", price: 3000, description: "このラウンドの入札額を別の金額に偽装する", type: "fake", count: 1 }
+    { id: "fake_bid", name: "偽装入札チケット", price: 3000, description: "このラウンドの入札額を別の金額に偽装する", type: "fake", count: 1 },
 ];
 
 const RARITY_CONFIG = {

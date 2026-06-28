@@ -1,8 +1,55 @@
 const ui = {
+    // ==========================================
+    // プレイヤー名にマークを付与する共通関数
+    // ==========================================
+    getDisplayName: function(player) {
+        const trophies = '🏆'.repeat(player.trophyCount || 0);
+        const debts = '💀'.repeat(player.debtCount || 0);
+        // マークがあれば名前の後ろにスペースを空けて追加
+        const marks = (trophies || debts) ? ` ${trophies}${debts}` : '';
+        return player.name + marks;
+    },
+    
     // ツール購入画面の描画
     renderShopList: function(player) {
         document.getElementById('shop-title').innerText = `${player.name} の購入フェーズ`;
         document.getElementById('shop-budget').innerText = `現在の予算: $${player.budget}`;
+
+        // ==========================================
+        // ★追加：ツール一覧の上に表示する専用エリア
+        // ==========================================
+        // ボタンを押せるかどうか（予算や借金があるか）を判定
+        const canRepay = player.debtCount > 0 && player.budget >= 10000;
+        const canBuyTrophy = player.budget >= 10000;
+
+        const bankAreaHtml = `
+            <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin-top: 15px; margin-bottom: 20px; border: 1px dashed #f1c40f;">
+                <p style="margin: 0 0 10px 0; color: #f1c40f; font-weight: bold;">🏦 銀行 ＆ 名誉</p>
+                <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                    <button onclick="game.takeDebt()" class="use-btn" style="background: #e74c3c;">
+                        💀 $10,000 借りる
+                    </button>
+                    <button onclick="game.repayDebt()" class="use-btn" style="background: #2ecc71;" ${canRepay ? '' : 'disabled'}>
+                        💵 返済 ($10,000)
+                    </button>
+                    <button onclick="game.buyTrophy()" class="use-btn" style="background: #f1c40f; color: black;" ${canBuyTrophy ? '' : 'disabled'}>
+                        🏆 トロフィー ($10,000)
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // HTML側に「専用エリアを表示する場所」があればそこに入れる
+        // もしHTML側に用意していなければ、ここで直接追加します
+        let bankContainer = document.getElementById('shop-bank-area');
+        if (!bankContainer) {
+            // 場所がなければ、タイトルや予算の下に枠を作って差し込む
+            bankContainer = document.createElement('div');
+            bankContainer.id = 'shop-bank-area';
+            document.getElementById('shop-budget').after(bankContainer);
+        }
+        bankContainer.innerHTML = bankAreaHtml;
+        // ==========================================
         
         // カテゴリごとのHTMLを貯めておく変数
         let htmlSize = '';
@@ -17,9 +64,32 @@ const ui = {
             let disabled = '';
             let btnText = `$${item.price} で購入`;
             
-            if (isOwned) { disabled = 'disabled'; btnText = '所持済み'; }
-            else if (!canAfford) { disabled = 'disabled'; btnText = '予算不足'; }
-            else if (isFull) { disabled = 'disabled'; btnText = '所持上限'; }
+            // ★追加：ステータス系（借金・トロフィー）の専用ボタン処理
+            // ★修正：onclickの中身をすべて game.useItem('アイテムID') に統一！
+            if (item.type === 'status') {
+                if (item.id === 'status_debt') {
+                    btnHtml = `<button onclick="game.useItem('status_debt')" style="width: 100%; padding: 6px; font-size: 12px; margin: 0; background: #e74c3c; color: white;">$10,000 借りる</button>`;
+                } else if (item.id === 'status_repay') {
+                    let disabled = ((player.debtCount || 0) > 0 && player.budget >= 10000) ? '' : 'disabled';
+                    btnHtml = `<button ${disabled} onclick="game.useItem('status_repay')" style="width: 100%; padding: 6px; font-size: 12px; margin: 0; background: ${disabled ? '#bdc3c7' : '#2ecc71'}; color: white;">返済する</button>`;
+                } else if (item.id === 'status_trophy') {
+                    let disabled = canAfford ? '' : 'disabled';
+                    btnHtml = `<button ${disabled} onclick="game.useItem('status_trophy')" style="width: 100%; padding: 6px; font-size: 12px; margin: 0; background: ${disabled ? '#bdc3c7' : '#f1c40f'}; color: black;">購入する</button>`;
+                }
+            }
+            // 通常のツール系のボタン処理
+            else {
+                if (isOwned) { 
+                    // ★修正：所持済みの場合は「返却ボタン」にする
+                    btnHtml = `<button onclick="game.returnItem('${item.id}', ${item.price})" style="width: 100%; padding: 6px; font-size: 12px; margin: 0; background: #e67e22; color: white;">返却 ($${item.price} 返金)</button>`;
+                } else if (!canAfford) { 
+                    btnHtml = `<button disabled style="width: 100%; padding: 6px; font-size: 12px; margin: 0; background: #bdc3c7;">予算不足</button>`;
+                } else if (isFull) { 
+                    btnHtml = `<button disabled style="width: 100%; padding: 6px; font-size: 12px; margin: 0; background: #bdc3c7;">所持上限</button>`;
+                } else {
+                    btnHtml = `<button onclick="game.buyItem('${item.id}', ${item.price})" style="width: 100%; padding: 6px; font-size: 12px; margin: 0; background: #3498db; color: white;">$${item.price} で購入</button>`;
+                }
+            }
 
             // グリッドレイアウトに合わせて、カード型のデザインに整形
             const itemHtml = `
@@ -224,6 +294,22 @@ const ui = {
                 resultHtml += `<p style="color:red; font-weight:bold;">😭 ガラクタばかりでした... $${Math.abs(profit)} の赤字！</p>`;
             }
         }
+
+        // ==========================================
+        // ニアピン賞の表示（クラスを使ってスッキリ記述）
+        // ==========================================
+        if (data.closestPlayers && data.closestPlayers.length > 0) {
+            const names = data.closestPlayers.map(p => p.name).join(' と ');
+            resultHtml += `
+                <div class="reward-panel">
+                    <p class="reward-title">🔍 【ニアピン賞】優れた鑑定眼！</p>
+                    <p class="reward-text">
+                        落札は逃しましたが、実際の価値に最も近い金額を提示した <strong>${names}</strong> に、鑑定報酬として <strong>$${data.appraisalReward}</strong> が支給されました！
+                    </p>
+                </div>
+            `;
+        }
+        // ==========================================
 
         resultHtml += `
             <hr>

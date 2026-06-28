@@ -180,3 +180,30 @@ button:disabled, .use-btn:disabled {
     color: #bdc3c7 !important;
     cursor: not-allowed;
 }
+
+/* =========================================
+   特別報酬（ニアピン賞など）のパネル
+========================================= */
+.reward-panel {
+    background: rgba(46, 204, 113, 0.15); 
+    border: 1px dashed #2ecc71; 
+    padding: 15px; 
+    border-radius: 8px; 
+    margin-top: 15px;
+    text-align: center;
+}
+
+.reward-title {
+    color: #2ecc71; 
+    margin: 0; 
+    font-weight: bold;
+}
+
+.reward-text {
+    margin: 5px 0 0 0; 
+    font-size: 14px; 
+    color: #ecf0f1;
+}
+.reward-text strong {
+    color: #2ecc71; /* 金額などを強調する緑 */
+}

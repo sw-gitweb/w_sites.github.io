@@ -4,19 +4,35 @@
 class Player {
     constructor(id, name, initialBudget) {
         this.id = id;
+        this.originalName = name; // ★追加：元の名前を記憶しておく
         this.name = name;
         this.budget = initialBudget;
         this.currentBid = 0;
         this.inventory = []; 
         this.hasUsedItemThisRound = false; 
-        this.fakeBidAmount = null; // ★偽装入札用のデータ
+        this.fakeBidAmount = null; 
 
-        // 自分だけが知っているアイテム情報をメモしておく場所
         this.knownItems = [];
+
+        // ★追加：トロフィーと借金の数を最初から持たせる
+        this.trophyCount = 0; 
+        this.debtCount = 0;   
     }
 
     bid(amount) {
         this.currentBid = amount;
+    }
+
+    // ==========================================
+    // ★追加：自分の名前をマーク付きに更新する処理
+    // ==========================================
+    updateNameWithMarks() {
+        const trophies = '🏆'.repeat(this.trophyCount);
+        const debts = '💀'.repeat(this.debtCount);
+        const marks = (trophies || debts) ? ` ${trophies}${debts}` : '';
+        
+        // 元の名前の後ろにマークをくっつけて上書き
+        this.name = this.originalName + marks;
     }
 }
 
@@ -212,12 +228,23 @@ class AuctionGame {
         ui.renderShopList(p); // UIの描画は専門のファイルにお任せする
     }
 
+    returnItem(itemId, price) {
+        const p = this.players[this.currentPlayerIndex];
+        const index = p.inventory.indexOf(itemId);
+        if (index > -1) {
+            p.inventory.splice(index, 1); // インベントリから削除
+            p.budget += price;            // お金を返す
+            ui.renderShopList(p);         // 画面を更新
+        }
+    }
+
+    // ★既存の buyItem も修正：最後に画面更新の処理を足す
     buyItem(itemId, price) {
         const p = this.players[this.currentPlayerIndex];
-        if (p.budget >= price && !p.inventory.includes(itemId) && p.inventory.length < MAX_INVENTORY_SIZE) {
+        if (p.budget >= price && p.inventory.length < MAX_INVENTORY_SIZE) {
             p.budget -= price;
             p.inventory.push(itemId);
-            this.renderShopList(); 
+            ui.renderShopList(p); // ★追加：買った瞬間にボタンと予算を更新！
         }
     }
 
@@ -507,6 +534,46 @@ class AuctionGame {
 
 
 
+    // ==========================================
+    // ★追加：専用ボタンから直接呼ばれる処理（即時反映）
+    // ==========================================
+    takeDebt() {
+        const p = this.players[this.currentPlayerIndex];
+        p.budget += 10000;
+        
+        // トロフィーがあれば没収、なければ借金が増える
+        if (p.trophyCount > 0) {
+            p.trophyCount--;
+        } else {
+            p.debtCount++;
+        }
+        
+        p.updateNameWithMarks(); // 1. 名前データを更新
+        ui.renderShopList(p);    // 2. 画面を即座に新しく作り直す（ズレ防止）
+    }
+
+    repayDebt() {
+        const p = this.players[this.currentPlayerIndex];
+        if (p.debtCount > 0 && p.budget >= 10000) {
+            p.budget -= 10000;
+            p.debtCount--;
+            
+            p.updateNameWithMarks();
+            ui.renderShopList(p);
+        }
+    }
+
+    buyTrophy() {
+        const p = this.players[this.currentPlayerIndex];
+        if (p.budget >= 10000) {
+            p.budget -= 10000;
+            p.trophyCount++;
+            
+            p.updateNameWithMarks();
+            ui.renderShopList(p);
+        }
+    }
+    
     submitBid() {
         const inputVal = document.getElementById('bid-input').value;
         const amount = parseInt(inputVal, 10);
@@ -556,20 +623,13 @@ class AuctionGame {
     }
 
     showBoxResult(isForced = false) {
-        // 1. 全員の「実際の」入札額から最高額を見つける
         let highestBid = 0;
         this.players.forEach(p => {
-            // ★修正：偽装は完全に無視！本物の入札額だけで勝負
             if (p.currentBid > highestBid) highestBid = p.currentBid;
         });
 
-        // 2. 最高額を入札したプレイヤーをリストアップする
-        const topBidders = this.players.filter(p => {
-            // ★修正：ここも本物の入札額だけで比較
-            return p.currentBid === highestBid;
-        });
+        const topBidders = this.players.filter(p => p.currentBid === highestBid);
 
-        // 3. 落札のお金の移動（計算）処理
         let winner = null;
         let actualBid = 0;
         let profit = 0;
@@ -577,7 +637,6 @@ class AuctionGame {
         // 単独トップ（1人だけ）の場合のみ、お金を動かす
         if (highestBid > 0 && topBidders.length === 1) {
             winner = topBidders[0];
-            // ★修正：実際に支払う金額は本物の currentBid
             actualBid = winner.currentBid; 
             
             winner.budget -= actualBid;
@@ -585,7 +644,36 @@ class AuctionGame {
             profit = this.currentBox.totalActualValue - actualBid;
         }
 
-        // 4. 計算結果をすべてまとめて、ui.jsに「これを表示して！」と渡す
+        // ==========================================
+        // ★追加：敗者救済の「ニアピン賞（鑑定報酬）」
+        // ==========================================
+        let closestPlayers = [];
+        let minDiff = Infinity;
+        const appraisalReward = 2000; // 報酬額（ハズレ検知器の代金が返ってくる程度）
+
+        // 勝者（単独落札者）以外のプレイヤーを対象とする
+        // （全員0円パスの場合は対象外にするため、currentBid > 0 の条件をつける）
+        const losers = this.players.filter(p => p !== winner && p.currentBid > 0);
+
+        losers.forEach(p => {
+            // 実際の価値と入札額の「差」を計算
+            let diff = Math.abs(this.currentBox.totalActualValue - p.currentBid);
+            
+            if (diff < minDiff) {
+                minDiff = diff;
+                closestPlayers = [p]; // 記録を更新
+            } else if (diff === minDiff) {
+                closestPlayers.push(p); // 同着なら追加
+            }
+        });
+
+        // 最も近かったプレイヤーにお金を振り込む
+        closestPlayers.forEach(p => {
+            p.budget += appraisalReward;
+        });
+        // ==========================================
+
+        // 4. 計算結果をすべてまとめて、ui.jsに渡す（closestPlayers と appraisalReward を追加）
         ui.showBoxResult({
             isForced: isForced,
             highestBid: highestBid,
@@ -595,7 +683,9 @@ class AuctionGame {
             profit: profit,
             currentBox: this.currentBox,
             players: this.players,
-            currentBiddingRound: this.currentBiddingRound
+            currentBiddingRound: this.currentBiddingRound,
+            closestPlayers: closestPlayers,       // ★追加
+            appraisalReward: appraisalReward      // ★追加
         });
 
         // 5. 計算されたアイテムの形をマス目の上に表示する
