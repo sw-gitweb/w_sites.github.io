@@ -153,9 +153,15 @@ const INITIAL_HINTS = [
     }
 ];
 
-const BUYOUT_MULTIPLIERS = {
-    1: 2.0, // 1ラウンド目は2位の2.0倍以上で強制落札
-    2: 1.5, // 2ラウンド目は1.5倍
-    3: 1.2, // 3ラウンド目は1.2倍
-    4: 1.1  // 4ラウンド目は1.1倍
+let BUYOUT_MULTIPLIERS = {
+    1: 2.0, 
+    2: 1.5, 
+    3: 1.2, 
+    4: 1.1  
 };
+
+// ★追加：ローカルストレージに設定があれば、そちらで上書きする
+const savedMultipliersJson = localStorage.getItem('auction_buyout_multipliers');
+if (savedMultipliersJson) {
+    BUYOUT_MULTIPLIERS = JSON.parse(savedMultipliersJson);
+}

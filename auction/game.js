@@ -556,17 +556,17 @@ class AuctionGame {
     }
 
     showBoxResult(isForced = false) {
-        // 1. 全員の入札額から最高額を見つける
+        // 1. 全員の「実際の」入札額から最高額を見つける
         let highestBid = 0;
         this.players.forEach(p => {
-            let finalBid = p.fakeBidAmount !== null ? p.fakeBidAmount : p.currentBid;
-            if (finalBid > highestBid) highestBid = finalBid;
+            // ★修正：偽装は完全に無視！本物の入札額だけで勝負
+            if (p.currentBid > highestBid) highestBid = p.currentBid;
         });
 
         // 2. 最高額を入札したプレイヤーをリストアップする
         const topBidders = this.players.filter(p => {
-            let finalBid = p.fakeBidAmount !== null ? p.fakeBidAmount : p.currentBid;
-            return finalBid === highestBid;
+            // ★修正：ここも本物の入札額だけで比較
+            return p.currentBid === highestBid;
         });
 
         // 3. 落札のお金の移動（計算）処理
@@ -577,7 +577,8 @@ class AuctionGame {
         // 単独トップ（1人だけ）の場合のみ、お金を動かす
         if (highestBid > 0 && topBidders.length === 1) {
             winner = topBidders[0];
-            actualBid = winner.fakeBidAmount !== null ? winner.currentBid : highestBid;
+            // ★修正：実際に支払う金額は本物の currentBid
+            actualBid = winner.currentBid; 
             
             winner.budget -= actualBid;
             winner.budget += this.currentBox.totalActualValue; 
