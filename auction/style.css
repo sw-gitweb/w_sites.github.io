@@ -207,3 +207,32 @@ button:disabled, .use-btn:disabled {
 .reward-text strong {
     color: #2ecc71; /* 金額などを強調する緑 */
 }
+
+
+
+/* =========================================
+   スマホ用レイアウト（横幅が600px以下の場合に適用）
+========================================= */
+@media (max-width: 600px) {
+    /* タイトルの文字を少し小さくする */
+    h1 { 
+        font-size: 2em; 
+    }
+
+    /* パネルの横幅を広げ、内側の余白を少し減らす */
+    .panel, .card {
+        width: 95%; 
+        padding: 15px; 
+    }
+
+    /* ショップの銀行＆名誉エリアのボタンを縦並びにして押しやすくする */
+    #shop-bank-area div {
+        flex-direction: column;
+    }
+
+    /* 各種ボタンのサイズを、指でタップしやすいように調整する */
+    .btn, .use-btn {
+        padding: 12px 20px;
+        font-size: 16px;
+    }
+}
