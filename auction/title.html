@@ -65,6 +65,11 @@
             </div>
         
         <div class="setting-group">
+            <label>1つの倉庫に対する競りの最大回数:</label><br>
+            <input type="number" id="max-bidding-rounds-input" min="1" max="10" value="3" style="width: 80px;"> 回
+        </div>
+
+        <div class="setting-group">
             <label>強制落札の倍率設定:</label><br>
             ラウンド1: <input type="number" id="multiplier-round-1" step="0.1" value="2.0" style="width: 80px;"> 倍<br>
             ラウンド2: <input type="number" id="multiplier-round-2" step="0.1" value="1.5" style="width: 80px;"> 倍<br>
@@ -100,6 +105,10 @@
             
             // 人数に合わせて入力欄を生成
             generateNameInputs();
+
+            // ★追加：競りの最大回数の読み込み（デフォルトは3）
+            const savedMaxBids = localStorage.getItem('auction_max_bidding_rounds') || 3;
+            document.getElementById('max-bidding-rounds-input').value = savedMaxBids;
 
             // ★追加：保存されている倍率を読み込んで入力欄にセットする
             const savedMultipliersJson = localStorage.getItem('auction_buyout_multipliers');
@@ -148,7 +157,11 @@
             // localStorage に人数と名前のリストを保存
             localStorage.setItem('auction_player_count', count);
             localStorage.setItem('auction_player_names', JSON.stringify(names));
-            
+
+            // ★追加：競りの最大回数の保存
+            const maxBids = parseInt(document.getElementById('max-bidding-rounds-input').value, 10) || 3;
+            localStorage.setItem('auction_max_bidding_rounds', maxBids);
+
             // ★追加：入力された倍率を取得して保存する
             // parseFloatで数値に変換。空欄などでエラーになった場合はデフォルト値を入れる
             const newMultipliers = {

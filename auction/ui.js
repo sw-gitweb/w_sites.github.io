@@ -16,24 +16,25 @@ const ui = {
         document.getElementById('shop-budget').innerText = `現在の予算: $${player.budget}`;
 
         // ==========================================
-        // ★追加：ツール一覧の上に表示する専用エリア
+        // ★修正：専用エリアを表示する場所（条件の追加）
         // ==========================================
-        // ボタンを押せるかどうか（予算や借金があるか）を判定
-        const canRepay = player.debtCount > 0 && player.budget >= 10000;
-        const canBuyTrophy = player.budget >= 10000;
+        // 各アクションが実行できるかどうかの条件判定
+        const canTakeDebt = player.budget <= 5000; // ★追加：所持金が5000以下の時だけ
+        const canRepay = (player.debtCount || 0) > 0 && player.budget >= 10000;
+        const canBuyTrophy = (player.debtCount || 0) === 0 && player.budget >= 10000; // ★修正：借金が0の時だけ
 
         const bankAreaHtml = `
             <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin-top: 15px; margin-bottom: 20px; border: 1px dashed #f1c40f;">
                 <p style="margin: 0 0 10px 0; color: #f1c40f; font-weight: bold;">🏦 銀行 ＆ 名誉</p>
                 <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-                    <button onclick="game.takeDebt()" class="use-btn" style="background: #e74c3c;">
+                    <button onclick="game.takeDebt()" class="use-btn" style="background: #e74c3c;" ${canTakeDebt ? '' : 'disabled'}>
                         💀 $10,000 借りる
                     </button>
                     <button onclick="game.repayDebt()" class="use-btn" style="background: #2ecc71;" ${canRepay ? '' : 'disabled'}>
                         💵 返済 ($10,000)
                     </button>
                     <button onclick="game.buyTrophy()" class="use-btn" style="background: #f1c40f; color: black;" ${canBuyTrophy ? '' : 'disabled'}>
-                        🏆 トロフィー ($10,000)
+                        🏆 トロフィー ($40,000)
                     </button>
                 </div>
             </div>
@@ -78,15 +79,16 @@ const ui = {
                 }
             }
             // 通常のツール系のボタン処理
+            // CSSの「button:disabled」が自動で効くように、シンプルなHTMLにする
             else {
                 if (isOwned) { 
-                    // ★修正：所持済みの場合は「返却ボタン」にする
-                    btnHtml = `<button onclick="game.returnItem('${item.id}', ${item.price})" style="width: 100%; padding: 6px; font-size: 12px; margin: 0; background: #e67e22; color: white;">返却 ($${item.price} 返金)</button>`;
+                    btnHtml = `<button disabled style="width: 100%; padding: 6px; font-size: 12px; margin: 0;">所持済み</button>`;
                 } else if (!canAfford) { 
-                    btnHtml = `<button disabled style="width: 100%; padding: 6px; font-size: 12px; margin: 0; background: #bdc3c7;">予算不足</button>`;
+                    btnHtml = `<button disabled style="width: 100%; padding: 6px; font-size: 12px; margin: 0;">予算不足</button>`;
                 } else if (isFull) { 
-                    btnHtml = `<button disabled style="width: 100%; padding: 6px; font-size: 12px; margin: 0; background: #bdc3c7;">所持上限</button>`;
+                    btnHtml = `<button disabled style="width: 100%; padding: 6px; font-size: 12px; margin: 0;">所持上限</button>`;
                 } else {
+                    // 押せる状態の時だけ、青色の設定をつける
                     btnHtml = `<button onclick="game.buyItem('${item.id}', ${item.price})" style="width: 100%; padding: 6px; font-size: 12px; margin: 0; background: #3498db; color: white;">$${item.price} で購入</button>`;
                 }
             }
@@ -98,7 +100,7 @@ const ui = {
                         <strong style="font-size: 13px; color: #2c3e50;">${item.name}</strong><br>
                         <div style="font-size: 11px; color: #7f8c8d; margin: 8px 0; line-height: 1.3;">${item.description}</div>
                     </div>
-                    <button ${disabled} onclick="game.buyItem('${item.id}', ${item.price})" style="width: 100%; padding: 6px; font-size: 12px; margin: 0; background: ${disabled ? '#bdc3c7' : '#3498db'};">${btnText}</button>
+                    ${btnHtml}
                 </div>
             `;
 

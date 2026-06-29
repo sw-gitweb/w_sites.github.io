@@ -186,6 +186,9 @@ class AuctionGame {
         const savedNamesJson = localStorage.getItem('auction_player_names');
         const savedNames = savedNamesJson ? JSON.parse(savedNamesJson) : [];
 
+        // ★追加：ローカルストレージから「競りの最大回数」を読み込んでセットする
+        this.maxBiddingRounds = parseInt(localStorage.getItem('auction_max_bidding_rounds')) || 3;
+
         this.players = [];
         
         // 読み込んだ人数分だけプレイヤーを生成する
@@ -241,10 +244,11 @@ class AuctionGame {
     // ★既存の buyItem も修正：最後に画面更新の処理を足す
     buyItem(itemId, price) {
         const p = this.players[this.currentPlayerIndex];
-        if (p.budget >= price && p.inventory.length < MAX_INVENTORY_SIZE) {
+        // ★修正：「予算がある」「空き枠がある」に加えて「まだ持っていない」を条件にする
+        if (p.budget >= price && p.inventory.length < MAX_INVENTORY_SIZE && !p.inventory.includes(itemId)) {
             p.budget -= price;
             p.inventory.push(itemId);
-            ui.renderShopList(p); // ★追加：買った瞬間にボタンと予算を更新！
+            ui.renderShopList(p); // 買った瞬間に画面を更新
         }
     }
 
@@ -539,7 +543,12 @@ class AuctionGame {
     // ==========================================
     takeDebt() {
         const p = this.players[this.currentPlayerIndex];
+
+        // ★追加：所持金が5000より多い場合は、処理を無視する
+        if (p.budget > 5000) return;
+        
         p.budget += 10000;
+
         
         // トロフィーがあれば没収、なければ借金が増える
         if (p.trophyCount > 0) {
@@ -565,8 +574,12 @@ class AuctionGame {
 
     buyTrophy() {
         const p = this.players[this.currentPlayerIndex];
-        if (p.budget >= 10000) {
-            p.budget -= 10000;
+
+        // ★修正：予算が足りない、または借金が1つでもある場合は無視する
+        if (p.budget < 40000 || p.debtCount > 0) return;
+
+        if (p.budget >= 40000) {
+            p.budget -= 40000;
             p.trophyCount++;
             
             p.updateNameWithMarks();
